@@ -1,38 +1,39 @@
-from collections import namedtuple
-import altair as alt
-import math
-import pandas as pd
 import streamlit as st
+import requests  # Don't forget to import requests
 
-"""
-# Welcome to Streamlit!
-
-Edit `/streamlit_app.py` to customize this app to your heart's desire :heart:
-
-If you have any questions, checkout our [documentation](https://docs.streamlit.io) and [community
-forums](https://discuss.streamlit.io).
-
-In the meantime, below is an example of what you can do with just a few lines of code:
-"""
+st.title("Curative Member Booklets Chatbot")
 
 
-with st.echo(code_location='below'):
-    total_points = st.slider("Number of points in spiral", 1, 5000, 2000)
-    num_turns = st.slider("Number of turns in spiral", 1, 100, 9)
+if "openai_model" not in st.session_state:
+    st.session_state["openai_model"] = "gpt-3.5-turbo"
 
-    Point = namedtuple('Point', 'x y')
-    data = []
+if "messages" not in st.session_state:
+    st.session_state.messages = []
 
-    points_per_turn = total_points / num_turns
+for message in st.session_state.messages:
+    with st.chat_message(message["role"]):
+        st.markdown(message["content"])
 
-    for curr_point_num in range(total_points):
-        curr_turn, i = divmod(curr_point_num, points_per_turn)
-        angle = (curr_turn + 1) * 2 * math.pi * i / points_per_turn
-        radius = curr_point_num / total_points
-        x = radius * math.cos(angle)
-        y = radius * math.sin(angle)
-        data.append(Point(x, y))
+if prompt := st.chat_input("What is up?"):
+    st.session_state.messages.append({"role": "user", "content": prompt})
+    with st.chat_message("user"):
+        st.markdown(prompt)
 
-    st.altair_chart(alt.Chart(pd.DataFrame(data), height=500, width=500)
-        .mark_circle(color='#0068c9', opacity=0.5)
-        .encode(x='x:Q', y='y:Q'))
+    with st.chat_message("assistant"):
+        message_placeholder = st.empty()
+        
+        # Send a POST request
+        response = requests.post(
+            "https://ai-guild.dev.curative.com/chatbot",
+            json={"query": prompt}
+        )
+
+        # Check the request was successful
+        if response.status_code == 200:
+            assistant_message = response.json().get("response", "")
+            # Your handling code, for example appending to messages and showing in UI
+            st.session_state.messages.append({"role": "assistant", "content": assistant_message})
+            message_placeholder.markdown(assistant_message)
+        else:
+            st.error("The request failed. Please try again later.")
+            # Optionally, you can add more error handling code here
