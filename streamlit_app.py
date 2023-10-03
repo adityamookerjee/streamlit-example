@@ -30,7 +30,7 @@ if prompt := st.chat_input("What is up?"):
 
         # Check the request was successful
         if response.status_code == 200:
-            assistant_message = response.json().get("response", "")
+            assistant_message = response.json().get("answer", "")
             # Your handling code, for example appending to messages and showing in UI
             st.session_state.messages.append({"role": "assistant", "content": assistant_message})
             message_placeholder.markdown(assistant_message)
