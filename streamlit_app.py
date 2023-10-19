@@ -37,7 +37,8 @@ for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-if prompt := st.chat_input("What is up?"):
+prompt = st.chat_input("What is up?")
+if prompt:
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.markdown(prompt)
@@ -55,12 +56,13 @@ if prompt := st.chat_input("What is up?"):
         if response.status_code == 200:
             assistant_message = response.json().get("answer", "")
             # Your handling code, for example appending to messages and showing in UI
-            st.session_state.messages.append({"role": "assistant", "content": assistant_message})
-            message_placeholder.markdown(assistant_message)
+
             extracted_references = extract_urls_from_response(response.json())
-            if extracted_references:
-                st.session_state.messages.append({"role": "assistant", "content": extracted_references})
-                message_placeholder.markdown(extracted_references)
+
+            message = assistant_message + "\n\n" + extracted_references if extracted_references else assistant_message
+
+            st.session_state.messages.append({"role": "assistant", "content": message})
+            message_placeholder.markdown(message)
                 
         else:
             st.error("The request failed. Please try again later.")
